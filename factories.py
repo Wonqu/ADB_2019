@@ -78,26 +78,29 @@ class ListingPictureFactory(SQLAlchemyModelFactory):
 
 
 if __name__ == '__main__':
-    NUM_USERS = 100
-    NUM_PICTURES = 100
-    NUM_LISTINGS = 100
+    NUM_USERS = 1000
+    NUM_PICTURES = 1000
+    NUM_LISTINGS = 1000
     MIN_BIDS = 10
     MAX_BIDS = 100
     MIN_PICS_PER_LISTING = 2
     MAX_PICS_PER_LISTING = 10
 
-    users = UserFactory.create_batch(size=NUM_USERS)
+    users = UserFactory.build_batch(size=NUM_USERS)
+    utils.session.bulk_save_objects(users)
     utils.session.commit()
     users = {u.id: u for u in users}
-    pictures = PictureFactory.create_batch(size=NUM_PICTURES)
+    pictures = PictureFactory.build_batch(size=NUM_PICTURES)
+    utils.session.bulk_save_objects(pictures)
     utils.session.commit()
     all_user_ids = set(users.keys())
-    listings = ListingFactory.create_batch(
+    listings = ListingFactory.build_batch(
         size=NUM_LISTINGS,
         seller_id=factory.LazyFunction(
             lambda: fake.random_element(all_user_ids)
         )
     )
+    utils.session.bulk_save_objects(listings)
     utils.session.commit()
     for l in listings:
         user_ids = all_user_ids - {l.seller_id}
@@ -105,7 +108,7 @@ if __name__ == '__main__':
         bidders = random.choices([x for x in users.values()], k=bids_size)
         bidder_gen1 = (x for x in bidders)
         bidder_gen2 = (x for x in bidders)
-        bids = BidFactory.create_batch(
+        bids = BidFactory.build_batch(
             size=random.randint(MIN_BIDS, bids_size),
             listing_id=l.id,
             bidder_id=factory.LazyFunction(
@@ -119,6 +122,7 @@ if __name__ == '__main__':
             ),
             bid_status='active' if next(bidder_gen2).active else 'inactive'
         )
+        utils.session.bulk_save_objects(bids)
         utils.session.commit()
         winning_bid = max(bids, key=lambda x: int(x.bid_price.replace(',', '').replace('$', '').replace('.', '')))
         price_int = int(winning_bid.bid_price.replace(',', '').replace('$', '').replace('.', ''))
