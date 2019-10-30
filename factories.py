@@ -89,10 +89,12 @@ if __name__ == '__main__':
     users = UserFactory.build_batch(size=NUM_USERS)
     utils.session.bulk_save_objects(users)
     utils.session.commit()
+    users = utils.session.query(models.User)
     users = {u.id: u for u in users}
     pictures = PictureFactory.build_batch(size=NUM_PICTURES)
     utils.session.bulk_save_objects(pictures)
     utils.session.commit()
+    pictures = list(utils.session.query(models.Picture))
     all_user_ids = set(users.keys())
     listings = ListingFactory.build_batch(
         size=NUM_LISTINGS,
@@ -102,6 +104,7 @@ if __name__ == '__main__':
     )
     utils.session.bulk_save_objects(listings)
     utils.session.commit()
+    listings = list(utils.session.query(models.Listing))
     for l in listings:
         user_ids = all_user_ids - {l.seller_id}
         bids_size = random.randint(MIN_BIDS, MAX_BIDS)
@@ -124,6 +127,7 @@ if __name__ == '__main__':
         )
         utils.session.bulk_save_objects(bids)
         utils.session.commit()
+        bids = list(utils.session.query(models.Bid).filter_by(listing_id=l.id))
         winning_bid = max(bids, key=lambda x: int(x.bid_price.replace(',', '').replace('$', '').replace('.', '')))
         price_int = int(winning_bid.bid_price.replace(',', '').replace('$', '').replace('.', ''))
         sale_price = int(price_int * 0.9)
