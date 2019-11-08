@@ -21,5 +21,6 @@ python factories.py
 Restore data from dump:
 ```
 docker exec -it adb_2019_db_1 sh
-psql posrgres -U postgres < /var/lib/postgresql/dumps/dump.sql
+psql -U postgres -d postgres -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+psql postgres -U postgres < /var/lib/postgresql/dumps/dump.sql
 ```
