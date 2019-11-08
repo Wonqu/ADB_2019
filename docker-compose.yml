@@ -7,6 +7,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ${PWD}/postgres/data:/var/lib/postgresql/data
+      - ./postgres/data:/var/lib/postgresql/dumps
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=128kB"
+      - "-c"
+      - "effective_cache_size=8kB"

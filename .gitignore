@@ -1,2 +1,4 @@
 __pycache__
 .idea
+docker-compose.override.yml
+postgres/data/*

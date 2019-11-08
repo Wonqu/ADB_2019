@@ -8,12 +8,18 @@ Run docker container:
 docker-compose up
 ```
 
-Create tables in database:
+Create tables in database (not necessary if you have the dump file):
 ```
 python models.py
 ```
 
-Create data:
+Create data (not necessary if you have the dump file):
 ```
 python factories.py
+```
+
+Restore data from dump:
+```
+docker exec -it adb_2019_db_1 sh
+psql posrgres -U postgres < /var/lib/postgresql/dumps/dump.sql
 ```
