@@ -377,11 +377,257 @@ LANGUAGE PLPGSQL;
 -- END Timed Execution wrappers
 
 
--- use this to execute/see results
+-- MEASURE
+
+-- this is used to store execution time in measure table using autonomous transaction
+-- take note that it is necessary to create such table (preferably in another database and schema, but can be in the same)
+-- create table measures
+-- (
+--     id               serial not null,
+--     measure_time_ms  numeric(1000),
+--     transaction_name varchar,
+--     improvement_name text
+-- );
+
+CREATE OR REPLACE FUNCTION log_dblink(v NUMERIC, t TEXT, i TEXT)
+ RETURNS void
+ LANGUAGE sql
+AS $function$
+    -- change dbname to postgres and measures.measures to public.measures if measures table is in the same schema
+   select dblink('host=/var/run/postgresql port=5432 user=postgres dbname=measures',
+    format('INSERT INTO measures.measures (measure_time_ms, transaction_name, improvement_name) VALUES (%L, %L, %L)', v, t, i)
+   )
+$function$;
+
+CREATE OR REPLACE PROCEDURE destroy_buffers()
+LANGUAGE plpgsql AS
+$$
+    DECLARE
+        row record;
+    BEGIN
+        FOR i IN 1..(
+            SELECT setting::bigint
+            FROM pg_settings
+            WHERE name = 'shared_buffers') + 10000
+        LOOP
+            INSERT INTO trash_buffers VALUES ('x');
+        END LOOP;
+        FOR row IN SELECT * FROM trash_buffers
+        LOOP
+        END LOOP;
+    END;
+$$;
+
+CREATE OR REPLACE PROCEDURE measure_1(imp_name TEXT)
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        PERFORM log_dblink(timed_execution_1(), 'transaction_1'::TEXT, imp_name);
+    END;
+$$;
+
+CREATE OR REPLACE PROCEDURE measure_2(imp_name TEXT)
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        PERFORM log_dblink(timed_execution_2(), 'transaction_2'::TEXT, imp_name);
+    END;
+$$;
+
+CREATE OR REPLACE PROCEDURE measure_3(imp_name TEXT)
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        PERFORM log_dblink(timed_execution_3(), 'transaction_3'::TEXT, imp_name);
+    END;
+$$;
+
+CREATE OR REPLACE PROCEDURE measure_4(imp_name TEXT)
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        PERFORM log_dblink(timed_execution_4(), 'transaction_4'::TEXT, imp_name);
+    END;
+$$;
+
+CREATE OR REPLACE PROCEDURE measure_5(imp_name TEXT)
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        PERFORM log_dblink(timed_execution_5(), 'transaction_5'::TEXT, imp_name);
+    END;
+$$;
+
 
 BEGIN TRANSACTION;
-SELECT
-       timed_execution_4() as time_ms,
-       'transaction_4' as tr_name
-;
+    SAVEPOINT a; CALL measure_1('no_improvement'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_2('no_improvement'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_3('no_improvement'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('no_improvement'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('no_improvement'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+ROLLBACK;
+
+BEGIN TRANSACTION;
+    -- IMPROVEMENT 1
+    CREATE INDEX idx_btree_bids_listing_id ON bids USING btree (listing_id);
+    CREATE INDEX idx_btree_bids_bidder_id ON bids USING btree (bidder_id);
+    CREATE INDEX idx_btree_listings_seller_id ON listings USING btree (seller_id);
+    CREATE INDEX idx_btree_listings_pictures_listing_id ON listings_pictures USING btree (listing_id);
+    CREATE INDEX idx_btree_listings_pictures_picture_id ON listings_pictures USING btree (picture_id);
+
+    SAVEPOINT a; CALL measure_1('improvement_1'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_2('improvement_1'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_3('improvement_1'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('improvement_1'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('improvement_1'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+ROLLBACK;
+
+BEGIN TRANSACTION;
+    -- IMPROVEMENT 2
+    ALTER TABLE bids ALTER COLUMN bid_status TYPE VARCHAR using bid_status::TEXT;
+    CREATE INDEX idx_brin_bids_bid_status ON bids USING brin(bid_status);
+
+    SAVEPOINT a; CALL measure_1('improvement_2'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_2('improvement_2'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_3('improvement_2'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('improvement_2'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('improvement_2'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+ROLLBACK;
+
+BEGIN TRANSACTION;
+    -- IMPROVEMENT 3
+    -- rename current table to backup
+    ALTER TABLE bids RENAME TO bids_backup;
+
+    -- Create partitioned table
+    create table bids
+    (
+        id serial not null,
+        listing_id integer
+            constraint bids_listing_id_fkey
+                references listings,
+        bidder_id  integer
+            constraint bids_bidder_id_fkey
+                references users,
+        bid_price  money,
+        bid_time   timestamp,
+        bid_status "BID_STATUS",
+        PRIMARY KEY(id, bid_status)
+    )
+    PARTITION BY LIST(bid_status);
+    CREATE TABLE bids_active PARTITION OF bids FOR VALUES IN ('active');
+    CREATE TABLE bids_inactive PARTITION OF bids FOR VALUES IN ('inactive');
+    CREATE TABLE bids_winner PARTITION OF bids FOR VALUES IN ('winner');
+    CREATE TABLE bids_loser PARTITION OF bids FOR VALUES IN ('loser');
+    CREATE TABLE bids_default PARTITION OF bids DEFAULT;
+
+    -- copy data from old table
+    INSERT INTO bids (SELECT * FROM bids_backup);
+
+    SAVEPOINT a; CALL measure_1('improvement_3'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    -- measure 2 for improvement 3 is the one that breaks
+    SAVEPOINT a; CALL measure_2('improvement_3'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    --
+    SAVEPOINT a; CALL measure_3('improvement_3'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('improvement_3'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('improvement_3'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+ROLLBACK;
+
+BEGIN TRANSACTION;
+    -- IMPROVEMENT 4
+    -- rename current table to backup
+    ALTER TABLE bids RENAME TO bids_backup;
+
+    -- Create partitioned table
+    create table bids
+    (
+        id serial not null,
+        listing_id integer
+            constraint bids_listing_id_fkey
+                references listings,
+        bidder_id  integer
+            constraint bids_bidder_id_fkey
+                references users,
+        bid_price  money,
+        bid_time   timestamp,
+        bid_status "BID_STATUS",
+        PRIMARY KEY(id, bid_time)
+    )
+    PARTITION BY RANGE(bid_time);
+
+    create table bids_p_2018_11
+    partition of bids
+    for values from ('2018-11-01') to ('2018-12-01');
+
+    create table bids_p_2018_12
+    partition of bids
+    for values from ('2018-12-01') to ('2019-1-01');
+
+    create table bids_p_2019_1
+    partition of bids
+    for values from ('2019-1-01') to ('2019-2-01');
+
+    create table bids_p_2019_2
+    partition of bids
+    for values from ('2019-2-01') to ('2019-3-01');
+
+    create table bids_p_2019_3
+    partition of bids
+    for values from ('2019-3-01') to ('2019-4-01');
+
+    create table bids_p_2019_4
+    partition of bids
+    for values from ('2019-4-01') to ('2019-5-01');
+
+    create table bids_p_2019_5
+    partition of bids
+    for values from ('2019-5-01') to ('2019-6-01');
+
+    create table bids_p_2019_6
+    partition of bids
+    for values from ('2019-6-01') to ('2019-7-01');
+
+    create table bids_p_2019_7
+    partition of bids
+    for values from ('2019-7-01') to ('2019-8-01');
+
+    create table bids_p_2019_8
+    partition of bids
+    for values from ('2019-8-01') to ('2019-9-01');
+
+    create table bids_p_2019_9
+    partition of bids
+    for values from ('2019-9-01') to ('2019-10-01');
+
+    create table bids_p_2019_10
+    partition of bids
+    for values from ('2019-10-01') to ('2019-11-01');
+
+    create table bids_p_2019_11
+    partition of bids
+    for values from ('2019-11-01') to ('2019-12-01');
+
+    create table bids_p_default
+    partition of bids
+    default;
+
+    -- Copy data from old bids to new bids
+    INSERT INTO bids (SELECT * FROM bids_backup);
+
+    SAVEPOINT a; CALL measure_1('improvement_4'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_2('improvement_4'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_3('improvement_4'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('improvement_4'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('improvement_4'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+ROLLBACK;
+
+BEGIN TRANSACTION;
+    create index index_bids_bidtime_year on bids using btree(extract(year from bid_time));
+    create index index_bids_bidtime_month on bids using btree(extract(month from bid_time));
+
+    SAVEPOINT a; CALL measure_1('improvement_5'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_2('improvement_5'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_3('improvement_5'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_4('improvement_5'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
+    SAVEPOINT a; CALL measure_5('improvement_5'::TEXT); ROLLBACK TO SAVEPOINT a; CALL destroy_buffers();
 ROLLBACK;
