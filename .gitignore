@@ -1,4 +1,6 @@
-__pycache__
-.idea
+/.idea/
+*.iml
+/postgres/
+/venv/
+__pycache__/
 docker-compose.override.yml
-postgres/data/*
