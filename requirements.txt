@@ -1,5 +1,3 @@
-docker
-docker-compose
 factory-boy==2.12.0
 Faker==2.0.3
 psycopg2==2.8.3
