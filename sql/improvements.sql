@@ -1,5 +1,6 @@
 -- Measuring before improvements
 
+SELECT * from information_schema.table_privileges WHERE  grantee = 'postgres';
 BEGIN TRANSACTION;
 SAVEPOINT before_experiment;
 CALL measure_1('Before');
@@ -63,7 +64,7 @@ ALTER TABLE users
     RENAME TO users_backup;
 
 -- Create partitioned table
-CREATE TABLE users
+CREATE TABLE users_master
 (
     id         SERIAL,
     name       VARCHAR(64),
@@ -75,12 +76,12 @@ CREATE TABLE users
     PRIMARY KEY (id, active)
 ) PARTITION BY LIST (active);
 
-CREATE TABLE users_active PARTITION OF users FOR VALUES IN (TRUE);
-CREATE TABLE users_inactive PARTITION OF users FOR VALUES IN (FALSE);
-CREATE TABLE users_default PARTITION OF users DEFAULT;
+CREATE TABLE users_active PARTITION OF users_master FOR VALUES IN (TRUE);
+CREATE TABLE users_inactive PARTITION OF users_master FOR VALUES IN (FALSE);
+CREATE TABLE users_default PARTITION OF users_master DEFAULT;
 
 -- copy data from old table
-INSERT INTO users (SELECT * FROM users);
+INSERT INTO users_master (SELECT * FROM users);
 
 -- IMPROVEMENT 4
 -- rename current table to backup
@@ -165,6 +166,11 @@ INSERT INTO bids(id, listing_id, bidder_id, bid_price, bid_time, bid_status, bid
              JOIN users u ON u.id = bb.bidder_id
 );
 
+-- creating new tablespace
+
+CREATE TABLESPACE new_tablespace OWNER postgres LOCATION 'storage location';
+ALTER TABLE users_master SET TABLESPACE new_tablespace;
+
 -- IMPROVEMENT 1
 CREATE INDEX idx_btree_bids_listing_id ON bids USING btree (listing_id);
 CREATE INDEX idx_btree_bids_bidder_id ON bids USING btree (bidder_id);
@@ -233,3 +239,6 @@ CALL measure_4('After');
 ROLLBACK TO SAVEPOINT before_experiment;
 CALL measure_5('After');
 ROLLBACK;
+
+SELECT * from pg_tablespace;
+
