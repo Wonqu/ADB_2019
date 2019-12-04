@@ -64,7 +64,7 @@ ALTER TABLE users
     RENAME TO users_backup;
 
 -- Create partitioned table
-CREATE TABLE users_master
+CREATE TABLE users
 (
     id         SERIAL,
     name       VARCHAR(64),
@@ -76,12 +76,12 @@ CREATE TABLE users_master
     PRIMARY KEY (id, active)
 ) PARTITION BY LIST (active);
 
-CREATE TABLE users_active PARTITION OF users_master FOR VALUES IN (TRUE);
-CREATE TABLE users_inactive PARTITION OF users_master FOR VALUES IN (FALSE);
-CREATE TABLE users_default PARTITION OF users_master DEFAULT;
+CREATE TABLE users_active PARTITION OF users FOR VALUES IN (TRUE);
+CREATE TABLE users_inactive PARTITION OF users FOR VALUES IN (FALSE);
+CREATE TABLE users_default PARTITION OF users DEFAULT;
 
 -- copy data from old table
-INSERT INTO users_master (SELECT * FROM users);
+INSERT INTO users (SELECT * FROM users_backup);
 
 -- IMPROVEMENT 4
 -- rename current table to backup
@@ -169,7 +169,7 @@ INSERT INTO bids(id, listing_id, bidder_id, bid_price, bid_time, bid_status, bid
 -- creating new tablespace
 
 CREATE TABLESPACE new_tablespace OWNER postgres LOCATION 'storage location';
-ALTER TABLE users_master SET TABLESPACE new_tablespace;
+ALTER TABLE users SET TABLESPACE new_tablespace;
 
 -- IMPROVEMENT 1
 CREATE INDEX idx_btree_bids_listing_id ON bids USING btree (listing_id);
@@ -241,4 +241,3 @@ CALL measure_5('After');
 ROLLBACK;
 
 SELECT * from pg_tablespace;
-
