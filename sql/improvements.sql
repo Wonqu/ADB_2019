@@ -1,6 +1,5 @@
 -- Measuring before improvements
 
-SELECT * from information_schema.table_privileges WHERE  grantee = 'postgres';
 BEGIN TRANSACTION;
 SAVEPOINT before_experiment;
 CALL measure_1('Before');
@@ -166,11 +165,6 @@ INSERT INTO bids(id, listing_id, bidder_id, bid_price, bid_time, bid_status, bid
              JOIN users u ON u.id = bb.bidder_id
 );
 
--- creating new tablespace
-
-CREATE TABLESPACE new_tablespace OWNER postgres LOCATION 'storage location';
-ALTER TABLE users SET TABLESPACE new_tablespace;
-
 -- IMPROVEMENT 1
 CREATE INDEX idx_btree_bids_listing_id ON bids USING btree (listing_id);
 CREATE INDEX idx_btree_bids_bidder_id ON bids USING btree (bidder_id);
@@ -186,7 +180,9 @@ CREATE INDEX idx_brin_bids_bid_status ON bids USING brin (bid_status);
 -- IMPROVEMENT 5
 CREATE INDEX index_bids_bidtime_year ON bids USING btree (extract(YEAR FROM bid_time));
 CREATE INDEX index_bids_bidtime_month ON bids USING btree (extract(MONTH FROM bid_time));
+COMMIT;
 
+BEGIN TRANSACTION;
 -- Measuring after improvements
 SAVEPOINT before_experiment;
 CALL measure_1('After');
@@ -240,4 +236,24 @@ ROLLBACK TO SAVEPOINT before_experiment;
 CALL measure_5('After');
 ROLLBACK;
 
-SELECT * from pg_tablespace;
+-- creating new tablespace
+
+CREATE TABLESPACE new_tablespace OWNER postgres LOCATION '/Users/ilayda/Desktop/postgres';
+ALTER TABLE users_inactive
+    SET TABLESPACE new_tablespace;
+
+BEGIN TRANSACTION;
+SAVEPOINT before_experiment;
+CALL measure_3('Partition experiment');
+ROLLBACK TO SAVEPOINT before_experiment;
+CALL measure_3('Partition experiment');
+ROLLBACK TO SAVEPOINT before_experiment;
+CALL measure_3('Partition experiment');
+ROLLBACK TO SAVEPOINT before_experiment;
+CALL measure_3('Partition experiment');
+ROLLBACK TO SAVEPOINT before_experiment;
+CALL measure_3('Partition experiment');
+ROLLBACK;
+
+SELECT *
+FROM pg_tablespace;

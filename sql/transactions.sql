@@ -399,7 +399,7 @@ CREATE OR REPLACE FUNCTION log_dblink(v NUMERIC, t TEXT, i TEXT)
 AS
 $$
     -- change dbname to postgres and measures.measures to public.measures if measures table is in the same schema
-SELECT dblink('host=/var/run/postgresql port=5432 user=postgres',
+SELECT dblink('host=127.0.0.1 port=5432 user=postgres',
               FORMAT(
                       'INSERT INTO measures.measures (measure_time_ms, transaction_name, improvement_name) VALUES (%L, %L, %L)',
                       v, t, i)
