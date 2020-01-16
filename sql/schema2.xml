@@ -1,0 +1,18 @@
+<?xml version="1.0"  encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="listings_pictures">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="listings_pictures" type="listing_picture" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="listing_picture">
+        <xs:sequence>
+            <xs:element name="listing_id" type="xs:positiveInteger"/>
+            <xs:element name="picture_id" type="xs:positiveInteger"/>
+        </xs:sequence>
+        <xs:attribute name="id" type="xs:positiveInteger"/>
+    </xs:complexType>
+</xs:schema>

@@ -1,0 +1,23 @@
+<?xml version="1.0"  encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="bids">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="bid" type="bid" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="bid">
+        <xs:sequence>
+            <xs:element name="bidder_id" type="xs:positiveInteger"/>
+            <xs:element name="price" type="xs:double"/>
+            <xs:element name="time" type="xs:dateTime"/>
+            <xs:element name="status" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute name="id" type="xs:positiveInteger"/>
+    </xs:complexType>
+</xs:schema>
+
+
+

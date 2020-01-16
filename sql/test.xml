@@ -1,0 +1,56 @@
+<bids>
+    <bid id="625523">
+        <bidder_id>10042</bidder_id>
+        <bid_price>$807.72</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625524">
+        <bidder_id>70573</bidder_id>
+        <bid_price>$6,038.53</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625525">
+        <bidder_id>43632</bidder_id>
+        <bid_price>$14,300.58</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625526">
+        <bidder_id>37608</bidder_id>
+        <bid_price>$15,400.21</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625527">
+        <bidder_id>70297</bidder_id>
+        <bid_price>$1,875.25</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625528">
+        <bidder_id>91008</bidder_id>
+        <bid_price>$14,556.60</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625529">
+        <bidder_id>85725</bidder_id>
+        <bid_price>$13,230.87</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="625530">
+        <bidder_id>19817</bidder_id>
+        <bid_price>$7,517.12</bid_price>
+        <bid_time>2019-06-26T10:35:54</bid_time>
+        <bid_status>active</bid_status>
+    </bid>
+    <bid id="725530">
+        <bidder_id>52280</bidder_id>
+        <bid_price>$1,540,022.00</bid_price>
+        <bid_time>2019-06-26T06:21:35</bid_time>
+        <bid_status>winner</bid_status>
+    </bid>
+</bids>
